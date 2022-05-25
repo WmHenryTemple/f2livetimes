@@ -1,6 +1,6 @@
-double getRate(Double_t run=2550,TString what="s1x"){
+double teste(Double_t run=2550,TString what="s1x"){
 
-  FILE *fp = fopen("src/rates.txt","r");  
+  FILE *fp = fopen("rates.txt","r");  
   Double_t rn,trig1,trig2,trig3,s1xs1y,s2xs2y,s1x,s1y,s2x,s2y,p1x7,p1y7,p2x7,p2y9,current;
   Double_t ncer,elLoLo, elLo, elHi, prLo, prHi,stof;
   Int_t ncols; 
@@ -20,7 +20,6 @@ double getRate(Double_t run=2550,TString what="s1x"){
     if(rn==run && what=="s1xs1y"){result=s1xs1y;break;}
     if(rn==run && what=="elHi"){result=elHi;break;}
     if(rn==run && what=="elLo"){result=elLo;break;}
-    if(rn==run && what=="stof"){result=stof;break;}
   }
   return result;
 }

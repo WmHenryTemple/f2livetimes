@@ -1,22 +1,21 @@
 #include <iomanip>
 #include <iostream>
 #include "src/getRate.cpp"
-void finalResults(){
+void finalResults2(){
   Int_t printAll=1;
   ofstream ofile;
-  ofile.open("livetimes_April2021.txt",ios::app | ios::out );
+  ofile.open("hmsBoilingCut11.txt");
   FILE *fp = fopen("livetimes.txt","r");  
-  Float_t ps, rt, eto, etf,eso, esf, tto, ttf, tso, tsf, trig1rt;
-  Float_t denom,num,clt,tlt,elt,tlte,clte,elte, cut;
+  Float_t ps, rt, eto, etf,eso, esf, tto, ttf, tso, tsf, s1xrate, current, trash;
+  Float_t denom,num,clt,tlt,elt,tlte,clte,elte;
   Int_t ncols,rn; 
-  vector <float> rate, run, compLive, elecLive, errCLT, errELT, totalLive, errTotal;
-  double fit_time, planeRate;
-
+  vector <float> planeRate,rate, run, compLive, elecLive, errCLT, errELT, totalLive, errTotal, bcmcut;
 
   while (1) { 
-         ncols = fscanf(fp,"%d %f %f %f %f %f %f %f %f %f %f %f %f",&rn,&ps,&rt,&trig1rt,&cut,&eto,&etf,&eso,&esf,&tto,&ttf,&tso,&tsf);
+    ncols = fscanf(fp,"%d %f %f %f %f %f %f %f %f %f %f %f",&rn,&current,&rt,&s1xrate,&eto,&etf,&eso,&esf,&tto,&ttf,&tso,&tsf);
     if (ncols < 0) break;
     // CLT_A
+    ps=1;
     num=tto+eto;
     denom=tso;      
     // CLT_P
@@ -25,11 +24,24 @@ void finalResults(){
     //
     clt=(num/denom*ps);
     clte=TMath::Sqrt(num*abs(1-num/denom))*ps/denom;
-    if(rn<2200.)fit_time=23.8E-9;
-    else fit_time=37.1E-9;
-    planeRate=getRate(rn,"s1x");
-    elt=1.0 - planeRate*fit_time;
-    elte=1 - elt;
+    //    planeRate=getRate(rn,"s1x");
+    //hms cut 11
+        elt=1.0/(1.0+s1xrate*-2.65359E-8);
+        elte=s1xrate*elt*elt*1.14893E-8;
+    //hms cut 12
+    //        elt=1.0/(1.0+s1xrate*-3.91205E-8);
+	//        elte=s1xrate*elt*elt*1.72496E-8;
+    //cut12
+    //    elt=1.0/(1.0+s1xrate*2.24611E-8);
+    //    elte=s1xrate*elt*elt*1.17749E-8;
+    //cut11
+    //    elt=1.0/(1.0+s1xrate*9.59508E-8);
+    //    elte=s1xrate*elt*elt*1.25098E-8;
+    //cut10
+    //    elt=1.0/(1.0+s1xrate*1.18491E-7);
+    //    elte=s1xrate*elt*elt*1.28556E-8;
+    //    elt=1.0/(1.0+planeRate*4.76733E-8);
+    //    elte=planeRate*elt*elt*1.20481E-8;
     // shms el real raw cut
     //       elt=1.0/(1.0+planeRate*1.34038E-7);
     //        elte=planeRate*elt*elt*1.34748E-8;
@@ -52,7 +64,9 @@ void finalResults(){
     tlt=elt*clt;
     tlte=sqrt(clte*clte/clt/clt+elte*elte/elt/elt)*tlt;
     run.push_back(rn);    
-    rate.push_back(planeRate);
+    bcmcut.push_back(current);    
+    rate.push_back(rt);
+    planeRate.push_back(s1xrate);
     compLive.push_back(clt);
     errCLT.push_back(clte);
     elecLive.push_back(elt);
@@ -71,9 +85,11 @@ void finalResults(){
       ofile<<std::setprecision(6);
 
       if(printAll==1){
-      ofile<<std::setprecision(1);
-      ofile << rate.at(i)<<setw(4) <<"\t";
+      ofile<<std::setprecision(0);
+	ofile << rate.at(i) <<"\t";
+	ofile << planeRate.at(i) <<"\t";
       ofile<<std::setprecision(6);
+	ofile << bcmcut.at(i) <<"\t";
 	ofile << compLive.at(i) <<"\t";
 	ofile << errCLT.at(i) <<"\t";
 	ofile << elecLive.at(i) <<"\t";

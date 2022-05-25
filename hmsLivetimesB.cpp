@@ -11,21 +11,16 @@ Double_t calcBinomRatioErr(Double_t numerCnts, Double_t denomCnts) {
   return (0.5*(Double_t) numerCnts / (Double_t) denomCnts) * TMath::Sqrt((1./((Double_t) numerCnts)) + (1./((Double_t) denomCnts)));
 }
 
-void livetimes(Int_t run=2484){
-  string spec="shms";
-  string arm="P";
-  string lcase="p";
-  if(run<2200){spec="hms";arm="H";lcase="h";}
-
-  int tightCut=0;
+void hmsLivetimesB(Int_t run=3204){
+  int tightCut=1;
   clock_t t=clock();
   Double_t ps=readReport(run,"Ps2 fact");
   //  if(ps<9)return;
-  Double_t tdc2ns=0.09766;//corrected cuts below will change
+  Double_t tdc2ns=0.09976;
   //  Double_t edtmHigh=113;
   //  Double_t edtmLow=109;
-  Double_t edtmHigh=181;
-  Double_t edtmLow=151;
+  Double_t edtmHigh=154;
+  Double_t edtmLow=119;
   Double_t edtmRefHigh=111.25;
   Double_t edtmRefLow=109.25;
   Double_t edtmRefHigh2=156.75;
@@ -48,37 +43,26 @@ void livetimes(Int_t run=2484){
   trig_tdc_beamOff = 0;
 
   // get trees and set branch addresses
-  TString froot;
-  if(spec=="shms"){
-    froot = Form("/lustre/expphy/cache/hallc/E12-10-002/abishek/realpass-3c-shms-data/shms_replay_production_%d_-1.root",run);
-  }
-  if(spec=="hms"){  
-froot = Form("/lustre/expphy/cache/hallc/E12-10-002/abishek/realpass-3b-hms-data/hms_replay_production_%d_-1.root",run);
- if(run>2005)froot = Form("/lustre/expphy/cache/hallc/E12-10-002/cmorean/realpass-3c-boiling/hms_replay_production_%d_-1.root",run);
-  }
-
+  TString froot = Form("/lustre/expphy/cache/hallc/E12-10-002/cmorean/realpass-3c-boiling/hms_replay_production_%d_-1.root",run);
   if (!gSystem->AccessPathName(froot)==0){cout<<"Couldn't find file"<<endl;return;}
-
   if(ps<1)return;
   TFile *f=new TFile(froot);
   Double_t edtm_scaler, edtm_tdc, trig_scaler, trig_tdc, bcm, bcm_scaler, trig_scalerRate, evNumber, trig_tdc_raw, edtm_tdc_raw,s1x_scalerRate;  
 
   TTree *T=(TTree*)f->Get("T");
-  T->SetBranchAddress(Form("T.%s.%sTRIG2_tdcTime",spec.c_str(),lcase.c_str()), &trig_tdc);
-  T->SetBranchAddress(Form("T.%s.%sEDTM_tdcTime",spec.c_str(),lcase.c_str()), &edtm_tdc);
-  T->SetBranchAddress(Form("T.%s.%sTRIG2_tdcTimeRaw",spec.c_str(),lcase.c_str()), &trig_tdc_raw);
-  T->SetBranchAddress(Form("T.%s.%sEDTM_tdcTimeRaw",spec.c_str(),lcase.c_str()), &edtm_tdc_raw);
-  T->SetBranchAddress(Form("%s.bcm.bcm4c.AvgCurrent",arm.c_str()), &bcm);
+  T->SetBranchAddress("T.hms.hTRIG2_tdcTime", &trig_tdc);
+  T->SetBranchAddress("T.hms.hEDTM_tdcTime", &edtm_tdc);
+  T->SetBranchAddress("T.hms.hTRIG2_tdcTimeRaw", &trig_tdc_raw);
+  T->SetBranchAddress("T.hms.hEDTM_tdcTimeRaw", &edtm_tdc_raw);
+  T->SetBranchAddress("H.bcm.bcm4c.AvgCurrent", &bcm);
 
-  TTree *TSP;
-  if(spec=="shms")TSP=(TTree*)f->Get("TSP");
-  if(spec=="hms")TSP=(TTree*)f->Get("TSH");
-  TSP->SetBranchAddress(Form("%s.%sTRIG2.scaler",arm.c_str(),lcase.c_str()), &trig_scaler);
-  TSP->SetBranchAddress(Form("%s.%sTRIG2.scalerRate",arm.c_str(),lcase.c_str()), &trig_scalerRate);
-  //  TSP->SetBranchAddress(Form("%s.pTRIG1.scalerRate",arm.c_str()), &trig1_scalerRate);
-  TSP->SetBranchAddress(Form("%s.S1X.scalerRate",arm.c_str()), &s1x_scalerRate);
-  TSP->SetBranchAddress(Form("%s.EDTM.scaler",arm.c_str()), &edtm_scaler);
-  TSP->SetBranchAddress(Form("%s.BCM4C.scalerCurrent",arm.c_str()), &bcm_scaler);
+  TTree *TSP=(TTree*)f->Get("TSH");
+  TSP->SetBranchAddress("H.hTRIG2.scaler", &trig_scaler);
+  TSP->SetBranchAddress("H.hTRIG2.scalerRate", &trig_scalerRate);
+  //  TSP->SetBranchAddress("P.pTRIG1.scalerRate", &trig1_scalerRate);
+  TSP->SetBranchAddress("H.S1X.scalerRate", &s1x_scalerRate);
+  TSP->SetBranchAddress("H.EDTM.scaler", &edtm_scaler);
+  TSP->SetBranchAddress("H.BCM4C.scalerCurrent", &bcm_scaler);
   TSP->SetBranchAddress("evNumber", &evNumber);
 
   //declare histos
@@ -90,54 +74,64 @@ froot = Form("/lustre/expphy/cache/hallc/E12-10-002/abishek/realpass-3b-hms-data
   const Double_t diffmax=300;
 
   TH1D * hedtm=new TH1D("hedtm","EDTM TDC Time",300,refmin,refmax);
-  TH1D * htrig=new TH1D("htrig","TRIG2 TDC Time",300,refmin,refmax);
+  TH1D * htrig=new TH1D("htrig","hTRIG2 TDC Time",300,refmin,refmax);
   TH1D * hedtm_raw=new TH1D("hedtm_raw","EDTM RAW TDC Time",300,rawmin,rawmax);
-  TH1D * htrig_raw=new TH1D("htrig_raw","TRIG2 RAW TDC Time",300,rawmin,rawmax);
+  TH1D * htrig_raw=new TH1D("htrig_raw","hTRIG2 RAW TDC Time",300,rawmin,rawmax);
   TH1D * hdiff=new TH1D("hdiff","Trig2 raw - EDTM raw",300,diffmin,diffmax);
 
   TH1D * hedtm_cut=new TH1D("hedtm_cut","EDTM TDC Time",300,refmin,refmax);
-  TH1D * htrig_cut=new TH1D("htrig_cut","TRIG2 TDC Time",300,refmin,refmax);
+  TH1D * htrig_cut=new TH1D("htrig_cut","hTRIG2 TDC Time",300,refmin,refmax);
   TH1D * hedtm_raw_cut=new TH1D("hedtm_raw_cut","EDTM TDC Time",300,rawmin,rawmax);
-  TH1D * htrig_raw_cut=new TH1D("htrig_raw_cut","TRIG2 TDC Time",300,rawmin,rawmax);  
+  TH1D * htrig_raw_cut=new TH1D("htrig_raw_cut","hTRIG2 TDC Time",300,rawmin,rawmax);  
   TH1D * hdiff_cut=new TH1D("hdiff_cut","Trig2 raw - EDTM raw",300,diffmin,diffmax);
-  TH1D * htrigcut=new TH1D("htrigcut","TRIG2 rate",500,0,100000);
+
+
+  TH1D * htrigcut=new TH1D("htrigcut","hTRIG2 rate",500,0,100000);
   TH1D * hs1xcut=new TH1D("hs1xcut","S1X rate",500,0,1000000);
-  TH1D * hbcm=new TH1D("hbcm","BCM4C Current",500,2,85);
+  TH1D * hbcm=new TH1D("hbcm","BCM4C Current",500,0,80);
 
 
   //********  Event Tree  ************  
   Int_t nev=T->GetEntries();
   Double_t bcmCut=5.;
+
+  if(tightCut==1)
+    {
+      //Need to find current cut first
+      for(Int_t i=0;i<nev;i++){
+	if(i%10000==1)cout<<i<<endl;
+	T->GetEntry(i);
+	//    hedtm->Fill(edtm_tdc);
+	//    htrig->Fill(trig_tdc);
+	hbcm->Fill(bcm);
+      }
+      bcmCut=hbcm->GetBinCenter(hbcm->GetMaximumBin())-2;
+      
+    }
+  // *************************************************************
+  // kinda complicated way to to get proper bcm value 
+  // Had to to this because bcm param files were not 100% correct
+  // *************************************************************
   const Int_t nevS=TSP->GetEntries();
   vector <double> eventNum;
   vector <double> bcmRead;
 
-      //Need to find current cut first
-      for(Int_t i=0;i<nevS;i++){
-	if(i%10000==1)cout<<i<<endl;
-	TSP->GetEntry(i);
-	eventNum.push_back(evNumber);
-	bcmRead.push_back(bcm_scaler);
-	//    hedtm->Fill(edtm_tdc);
-	//    htrig->Fill(trig_tdc);
-	hbcm->Fill(bcm_scaler);
-      }
-
-      if(tightCut==1)
-	{
-	  bcmCut=hbcm->GetBinCenter(hbcm->GetMaximumBin())-2;
-	}
-
+  for(int k=0; k<nevS; k++)
+    {
+      TSP->GetEntry(k);
+      eventNum.push_back(evNumber);
+      bcmRead.push_back(bcm_scaler);
+    }
 
   Double_t bcmS=0;
   Double_t ev=0;
   Double_t last=0;
+  Double_t thisEntry=0;
   Int_t done=0;
   // nev=10000;
   for(Int_t i=0;i<nev;i++){
     if(i%10000==1)cout<<i<<endl;
     T->GetEntry(i);
-
     // Assign current to event # from scaler tree
     done=0;
    if(i+1>last)  //if the event number has passed the scaler event asoociated with current bcm value then time to get new value 
@@ -154,6 +148,7 @@ froot = Form("/lustre/expphy/cache/hallc/E12-10-002/abishek/realpass-3b-hms-data
 	       if(ev>i+1)// this is the scaler ev i should use
 		 {
 		   done=1;
+		   thisEntry=j;
 		   bcmS=bcmRead.at(j);
 		   last=ev;
 		   //		   cout << "i \t j \t bcmS \t ev"<<endl;
@@ -182,10 +177,9 @@ froot = Form("/lustre/expphy/cache/hallc/E12-10-002/abishek/realpass-3b-hms-data
 
       // EDTM Event?
    //     if(abs(diffCut-tdc2ns*(-edtm_tdc_raw+trig_tdc_raw)) < 1 && edtm_tdc!=0){
-   //   if(edtm_tdc_raw*tdc2ns>edtmLow && edtm_tdc_raw*tdc2ns<edtmHigh){
-   //   if((edtm_tdc>edtmRefLow && edtm_tdc<edtmRefHigh)){//||(edtm_tdc>edtmRefLow2 && edtm_tdc<edtmRefHigh2)){
-       if(edtm_tdc!=0){
-
+   //      if(edtm_tdc_raw*tdc2ns>edtmLow && edtm_tdc_raw*tdc2ns<edtmHigh){
+      // if((edtm_tdc>edtmRefLow && edtm_tdc<edtmRefHigh)||(edtm_tdc>edtmRefLow2 && edtm_tdc<edtmRefHigh2)){
+   if(edtm_tdc!=0){
       hedtm_cut->Fill(edtm_tdc);
       hedtm_raw_cut->Fill(edtm_tdc_raw*tdc2ns);
       hdiff_cut->Fill((trig_tdc_raw-edtm_tdc_raw)*tdc2ns);
@@ -239,8 +233,8 @@ froot = Form("/lustre/expphy/cache/hallc/E12-10-002/abishek/realpass-3b-hms-data
   Double_t trigRate=htrigcut->GetMean();
   Double_t s1xrate=hs1xcut->GetMean();
   ofstream ofile;
-  ofile.open("test.txt",ios::app | ios::out );
-  ofile << run <<"\t" << ps <<"\t" << trigRate << "\t"<<s1xrate << "\t" << bcmCut << "\t";
+  ofile.open("cut12hmsBoiling.txt",ios::app | ios::out );
+  ofile << run <<"\t" << bcmCut  <<"\t" << trigRate << "\t"<<s1xrate << "\t";
   ofile<<edtm_tdc_beamOn<<"\t"<<edtm_tdc_beamOff<<"\t"<<edtm_scaler_beamOn<<"\t"<<edtm_scaler_beamOff<<"\t";
   ofile<<trig_tdc_beamOn<<"\t"<<trig_tdc_beamOff<<"\t"<<trig_scaler_beamOn<<"\t"<<trig_scaler_beamOff<<endl;
 
@@ -316,10 +310,8 @@ froot = Form("/lustre/expphy/cache/hallc/E12-10-002/abishek/realpass-3b-hms-data
  tx->AddText(string);
  string = Form("Prescale fact:%2.1f",readReport(run,"Ps2 fact"));
  tx->AddText(string);
- string = Form("BCM cut:%2.3f",bcmCut);
- tx->AddText(string);
  tx->Draw();
- c1->SaveAs(Form("PDFs/SHMS_5uA_NE0_run%d.pdf",run));
+ c1->SaveAs(Form("PDFs/hmsCut12run%d.pdf",run));
   //  cout << "EDTM TDC" << "\t" << "EDTM scaler" << "\t" << "EDTM scaler CP" << "\t" << "EDTM scaler V2"<< endl;
   //  cout << edtmTdcHits << "\t" << edtmScalerCnts << "\t" << edtmScalerCntsCP << "\t" << edtmScalerCntsV2 << endl;
 

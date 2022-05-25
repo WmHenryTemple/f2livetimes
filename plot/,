@@ -1,0 +1,40 @@
+void plot(){
+
+  FILE *fp = fopen("data.txt","r");  
+  Float_t run,rate,eff1,eff2,evts,frac1,frac2;
+  Int_t ncols; 
+  vector <float> x1v, x2v, y1v;
+  while (1) { 
+    ncols = fscanf(fp,"%f %f %f %f %f %f %f",&run,&rate,&eff1,&eff2,&evts,&frac1,&frac2); 
+    cout << run <<endl;
+    if (ncols < 0) break;
+    x1v.push_back(run);
+    x2v.push_back(rate);
+    y1v.push_back(frac1);
+  }
+  Int_t pts=x1v.size();
+  TGraph *gr1=new TGraph(pts,&x1v[0],&y1v[0]);
+  TGraph *gr2=new TGraph(pts,&x2v[0],&y1v[0]);
+
+  TCanvas *c1=new TCanvas();
+
+  gr1->SetTitle("Effect of DCany_large cut");
+  gr2->SetTitle("Effect of DCany_large cut");
+  gr1->GetXaxis()->SetTitle("Run Number");
+  gr2->GetXaxis()->SetTitle("Trigger Rate");
+  gr1->GetYaxis()->SetTitle("Ratio With/Without");
+  gr2->GetYaxis()->SetTitle("Ratio With/Without");
+  gr1->SetMarkerStyle(20);
+  gr2->SetMarkerStyle(20);
+  c1->Divide(2,1);
+  c1->cd(1);
+  gPad->SetLeftMargin(.15);
+  gr1->Draw("ap");
+  c1->cd(2);
+  gPad->SetLeftMargin(.15);
+  gr2->Draw("ap");
+
+  c1->SaveAs("plot.pdf");
+  return;
+}
+
